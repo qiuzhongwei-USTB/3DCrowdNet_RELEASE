@@ -17,7 +17,7 @@ class Config:
 
     ## model setting
     resnet_type = 50  # 50, 101, 152
-    backbone_type = 'resnet' #[resnet, vit]
+    backbone_type = 'vit' #[resnet, vit]
     
     ## input, output
     input_img_shape = (256, 256)  #(256, 192)
