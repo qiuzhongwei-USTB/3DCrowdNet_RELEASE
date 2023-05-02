@@ -23,7 +23,7 @@ class Pose2Feat(nn.Module):
 
 class Pose2FeatVit(nn.Module):
     def __init__(self, joint_num):
-        super(Pose2Feat, self).__init__()
+        super(Pose2FeatVit, self).__init__()
         self.joint_num = joint_num
         self.conv = make_conv_layers([768+joint_num,768])
 
