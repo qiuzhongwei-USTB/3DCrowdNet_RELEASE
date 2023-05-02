@@ -12,6 +12,8 @@ import math
 
 from utils.transforms import rot6d_to_axis_angle
 
+from nets.vit import ViT
+
 
 class Model(nn.Module):
     def __init__(self, backbone, pose2feat, position_net, rotation_net, vposer):
@@ -83,7 +85,7 @@ class Model(nn.Module):
 
     def forward(self, inputs, targets, meta_info, mode):
         early_img_feat = self.backbone(inputs['img'])  #pose_guided_img_feat
-
+        print(early_img_feat.shape, ' early_img_feat')
         # get pose gauided image feature
         joint_coord_img = inputs['joints']
         with torch.no_grad():
@@ -92,7 +94,8 @@ class Model(nn.Module):
             joint_heatmap = joint_heatmap * inputs['joints_mask'][:,:,:,None]
         pose_img_feat = self.pose2feat(early_img_feat, joint_heatmap)
         pose_guided_img_feat = self.backbone(pose_img_feat, skip_early=True)  # 2048 x 8 x 8
-
+        print(pose_guided_img_feat.shape, ' pose_guided_img_feat')
+        assert False
         joint_img, joint_score = self.position_net(pose_guided_img_feat)  # refined 2D pose or 3D pose
 
         # estimate model parameters
@@ -161,9 +164,57 @@ def init_weights(m):
         nn.init.normal_(m.weight,std=0.01)
         nn.init.constant_(m.bias,0)
 
-def get_model(vertex_num, joint_num, mode):
 
-    backbone = ResNetBackbone(cfg.resnet_type)
+vit_cfg = {
+    'vit_s':{
+        'img_size':(256, 256),
+        'patch_size':16,
+        'embed_dim':384,
+        'depth':12,
+        'num_heads':12,
+        'ratio':1,
+        'use_checkpoint':False,
+        'mlp_ratio':4,
+        'qkv_bias':True,
+        'drop_path_rate':0.1,
+        'pre_trained_file': '../vitpose_small.pth',
+        },
+    'vit_b':{
+        'img_size':(256, 256),
+        'patch_size':16,
+        'embed_dim':768,
+        'depth':12,
+        'num_heads':12,
+        'ratio':1,
+        'use_checkpoint':False,
+        'mlp_ratio':4,
+        'qkv_bias':True,
+        'drop_path_rate':0.3,
+        'pre_trained_file':'../latest.pth',
+    }
+}
+
+def get_model(vertex_num, joint_num, mode):
+    if cfg.backbone_type == 'resnet':
+        backbone = ResNetBackbone(cfg.resnet_type)
+    elif cfg.backbone_type == 'vit':
+        print('===> using vit-{} as backnone'.format(cfg.backbone_type))
+        vit_cfg_ = vit_cfg['vit_b']
+
+        backbone = ViT(
+            img_size=vit_cfg_['img_size'],
+            patch_size=vit_cfg_['patch_size'],
+            embed_dim=vit_cfg_['embed_dim'],
+            depth=vit_cfg_['depth'],
+            num_heads=vit_cfg_['num_heads'],
+            ratio=vit_cfg_['ratio'],
+            use_checkpoint=vit_cfg_['use_checkpoint'],
+            mlp_ratio=vit_cfg_['mlp_ratio'],
+            qkv_bias=vit_cfg_['qkv_bias'],
+            drop_path_rate=vit_cfg_['drop_path_rate'],
+            pre_trained_file=vit_cfg_['pre_trained_file'],
+            )
+
     pose2feat = Pose2Feat(joint_num)
     position_net = PositionNet()
     rotation_net = RotationNet()
