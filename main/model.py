@@ -214,6 +214,8 @@ def get_model(vertex_num, joint_num, mode):
             drop_path_rate=vit_cfg_['drop_path_rate'],
             pre_trained_file=vit_cfg_['pre_trained_file'],
             )
+    else:
+        assert False
 
     pose2feat = Pose2Feat(joint_num)
     position_net = PositionNet()
