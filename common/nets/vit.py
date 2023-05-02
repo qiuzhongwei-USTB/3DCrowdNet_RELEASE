@@ -405,10 +405,11 @@ class ViT(BaseBackbone):
                 x = blk(x)
 
 
-
+        B = x.shape[0]
         x = self.last_norm(x)
 
-        xp = x.permute(0, 2, 1).reshape(B, -1, Hp, Wp).contiguous()
+        # xp = x.permute(0, 2, 1).reshape(B, -1, Hp, Wp).contiguous()
+        xp = x.permute(0, 2, 1).reshape(B, -1, 16, 16).contiguous()
 
         # print(x.shape, xp.shape, '  output')  torch.Size([64, 256, 768]) torch.Size([64, 768, 16, 16])   output
         # for i in range(len(xs)):
