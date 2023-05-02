@@ -380,35 +380,44 @@ class ViT(BaseBackbone):
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}
 
-    def forward_features(self, x):
-        B, C, H, W = x.shape
-        x, (Hp, Wp) = self.patch_embed(x)
+    def forward_features(self, x, skip_early=False):
+        if not skip_early:
+            B, C, H, W = x.shape
+            x, (Hp, Wp) = self.patch_embed(x)
 
-        if self.pos_embed is not None:
-            # fit for multiple GPU training
-            # since the first element for pos embed (sin-cos manner) is zero, it will cause no difference
-            x = x + self.pos_embed[:, 1:] + self.pos_embed[:, :1]
-        xs = []
-        for blk in self.blocks:
+            if self.pos_embed is not None:
+                # fit for multiple GPU training
+                # since the first element for pos embed (sin-cos manner) is zero, it will cause no difference
+                x = x + self.pos_embed[:, 1:] + self.pos_embed[:, :1]
+
+            blk = self.blocks[0]
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
                 x = blk(x)
 
-            xs.append(x)
+            return x.permute(0, 2, 1).reshape(B, -1, Hp, Wp).contiguous()
+
+        for blk in self.blocks[1:]:
+            if self.use_checkpoint:
+                x = checkpoint.checkpoint(blk, x)
+            else:
+                x = blk(x)
+
+
 
         x = self.last_norm(x)
 
         xp = x.permute(0, 2, 1).reshape(B, -1, Hp, Wp).contiguous()
 
-        print(x.shape, xp.shape, '  output')
-        for i in range(len(xs)):
-            print('feature shape, {}, layer:{}'.format(i, xs[i].shape))
-        assert False
+        # print(x.shape, xp.shape, '  output')  torch.Size([64, 256, 768]) torch.Size([64, 768, 16, 16])   output
+        # for i in range(len(xs)):
+            # print('feature shape, {}, layer:{}'.format(i, xs[i].shape))  #feature shape, 0, layer:torch.Size([64, 256, 768])
+        # assert False
         return xp
 
-    def forward(self, x):
-        x = self.forward_features(x)
+    def forward(self, x, skip_early=False):
+        x = self.forward_features(x, skip_early=skip_early)
         # print('vit out:', x.shape)
         return x
 

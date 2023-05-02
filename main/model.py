@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from nets.resnet import ResNetBackbone
-from nets.module import Pose2Feat, PositionNet, RotationNet, Vposer
+from nets.module import Pose2Feat, PositionNet, RotationNet, Vposer, Pose2FeatVit
 from nets.loss import CoordLoss, ParamLoss, NormalVectorLoss, EdgeLengthLoss
 from utils.smpl import SMPL
 from utils.mano import MANO
@@ -85,13 +85,16 @@ class Model(nn.Module):
 
     def forward(self, inputs, targets, meta_info, mode):
         early_img_feat = self.backbone(inputs['img'])  #pose_guided_img_feat
-        # print(early_img_feat.shape, ' early_img_feat') #torch.Size([64, 64, 64, 64])
+        # print(early_img_feat.shape, ' early_img_feat') #torch.Size([64, 64, 64, 64])  vit bx256x768-> bx768x16x16
         # get pose gauided image feature
         joint_coord_img = inputs['joints']
         with torch.no_grad():
             joint_heatmap = self.make_2d_gaussian_heatmap(joint_coord_img.detach())
             # remove blob centered at (0,0) == invalid ones
             joint_heatmap = joint_heatmap * inputs['joints_mask'][:,:,:,None]
+
+        print(joint_heatmap.shape, 'joint_heatmap')
+        assert False
         pose_img_feat = self.pose2feat(early_img_feat, joint_heatmap)
         pose_guided_img_feat = self.backbone(pose_img_feat, skip_early=True)  # 2048 x 8 x 8
         # print(pose_guided_img_feat.shape, ' pose_guided_img_feat') torch.Size([64, 2048, 8, 8])
@@ -197,6 +200,7 @@ vit_cfg = {
 def get_model(vertex_num, joint_num, mode):
     if cfg.backbone_type == 'resnet':
         backbone = ResNetBackbone(cfg.resnet_type)
+        pose2feat = Pose2Feat(joint_num)
     elif cfg.backbone_type == 'vit':
         print('===> using vit-{} as backnone'.format(cfg.backbone_type))
         vit_cfg_ = vit_cfg['vit_b']
@@ -214,10 +218,11 @@ def get_model(vertex_num, joint_num, mode):
             drop_path_rate=vit_cfg_['drop_path_rate'],
             pre_trained_file=vit_cfg_['pre_trained_file'],
             )
+        pose2feat = Pose2FeatVit(joint_num)
     else:
         assert False
 
-    pose2feat = Pose2Feat(joint_num)
+    
     position_net = PositionNet()
     rotation_net = RotationNet()
     vposer = Vposer()

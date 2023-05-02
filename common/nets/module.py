@@ -21,6 +21,17 @@ class Pose2Feat(nn.Module):
         feat = self.conv(feat)
         return feat
 
+class Pose2FeatVit(nn.Module):
+    def __init__(self, joint_num):
+        super(Pose2Feat, self).__init__()
+        self.joint_num = joint_num
+        self.conv = make_conv_layers([768+joint_num,768])
+
+    def forward(self, img_feat, joint_heatmap):
+        feat = torch.cat((img_feat, joint_heatmap),1)
+        feat = self.conv(feat)
+        return feat
+
 
 class PositionNet(nn.Module):
     def __init__(self):
