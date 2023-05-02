@@ -388,17 +388,23 @@ class ViT(BaseBackbone):
             # fit for multiple GPU training
             # since the first element for pos embed (sin-cos manner) is zero, it will cause no difference
             x = x + self.pos_embed[:, 1:] + self.pos_embed[:, :1]
-
+        xs = []
         for blk in self.blocks:
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
                 x = blk(x)
 
+            xs.append(x)
+
         x = self.last_norm(x)
 
         xp = x.permute(0, 2, 1).reshape(B, -1, Hp, Wp).contiguous()
 
+        print(x.shape, xp.shape, '  output')
+        for i in range(len(xs)):
+            print('feature shape, {}, layer:{}'.format(i, xs[i].shape))
+        assert False
         return xp
 
     def forward(self, x):

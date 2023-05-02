@@ -85,7 +85,7 @@ class Model(nn.Module):
 
     def forward(self, inputs, targets, meta_info, mode):
         early_img_feat = self.backbone(inputs['img'])  #pose_guided_img_feat
-        print(early_img_feat.shape, ' early_img_feat')
+        # print(early_img_feat.shape, ' early_img_feat') #torch.Size([64, 64, 64, 64])
         # get pose gauided image feature
         joint_coord_img = inputs['joints']
         with torch.no_grad():
@@ -94,8 +94,8 @@ class Model(nn.Module):
             joint_heatmap = joint_heatmap * inputs['joints_mask'][:,:,:,None]
         pose_img_feat = self.pose2feat(early_img_feat, joint_heatmap)
         pose_guided_img_feat = self.backbone(pose_img_feat, skip_early=True)  # 2048 x 8 x 8
-        print(pose_guided_img_feat.shape, ' pose_guided_img_feat')
-        assert False
+        # print(pose_guided_img_feat.shape, ' pose_guided_img_feat') torch.Size([64, 2048, 8, 8])
+        # assert False
         joint_img, joint_score = self.position_net(pose_guided_img_feat)  # refined 2D pose or 3D pose
 
         # estimate model parameters
