@@ -34,6 +34,7 @@ class Model(nn.Module):
         self.mesh_face = self.human_model.face
         self.joint_regressor = self.human_model.joint_regressor
 
+        self.vit_conv_layer = torch.nn.Conv2d(768, 2048, 1, 1, 0)
         self.coord_loss = CoordLoss()
         self.param_loss = ParamLoss()
 
@@ -93,14 +94,19 @@ class Model(nn.Module):
             # remove blob centered at (0,0) == invalid ones
             joint_heatmap = joint_heatmap * inputs['joints_mask'][:,:,:,None]
 
-        hm_shape = joint_heatmap.shape
+        hm_shape = joint_heatmap.shape  #torch.Size([64, 30, 64, 64]) joint_heatmap
         early_img_feat_shape = early_img_feat.shape
-        # joint_heatmap = 
+        joint_heatmap = torch.nn.functional.interpolate(joint_heatmap, size=(early_img_feat_shape[-2], early_img_feat_shape[-1]))
 
-        print(joint_heatmap.shape, 'joint_heatmap')
+        pose_img_feat = self.pose2feat(early_img_feat, joint_heatmap) #(b,768,16,16)
+        pose_img_feat_shape = pose_img_feat.shape
+        pose_img_feat = pose_img_feat.reshape(pose_img_feat_shape[0], pose_img_feat_shape[1], -1).permute(0, 2, 1).contiguous()
+
+        pose_guided_img_feat = self.backbone(pose_img_feat, skip_early=True)  # 2048 x 8 x 8 vit bx768x16x16
+        pose_guided_img_feat = torch.nn.functional.interpolate(pose_guided_img_feat, size=(8, 8))
+        pose_guided_img_feat = self.vit_conv_layer(pose_guided_img_feat) 
+        print(pose_guided_img_feat.shape)
         assert False
-        pose_img_feat = self.pose2feat(early_img_feat, joint_heatmap)
-        pose_guided_img_feat = self.backbone(pose_img_feat, skip_early=True)  # 2048 x 8 x 8
         # print(pose_guided_img_feat.shape, ' pose_guided_img_feat') torch.Size([64, 2048, 8, 8])
         # assert False
         joint_img, joint_score = self.position_net(pose_guided_img_feat)  # refined 2D pose or 3D pose
