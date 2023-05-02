@@ -93,6 +93,10 @@ class Model(nn.Module):
             # remove blob centered at (0,0) == invalid ones
             joint_heatmap = joint_heatmap * inputs['joints_mask'][:,:,:,None]
 
+        hm_shape = joint_heatmap.shape
+        early_img_feat_shape = early_img_feat.shape
+        # joint_heatmap = 
+
         print(joint_heatmap.shape, 'joint_heatmap')
         assert False
         pose_img_feat = self.pose2feat(early_img_feat, joint_heatmap)
