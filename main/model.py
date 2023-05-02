@@ -105,8 +105,8 @@ class Model(nn.Module):
         pose_guided_img_feat = self.backbone(pose_img_feat, skip_early=True)  # 2048 x 8 x 8 vit bx768x16x16
         pose_guided_img_feat = torch.nn.functional.interpolate(pose_guided_img_feat, size=(8, 8))
         pose_guided_img_feat = self.vit_conv_layer(pose_guided_img_feat) 
-        print(pose_guided_img_feat.shape)
-        assert False
+        # print(pose_guided_img_feat.shape)
+        # assert False
         # print(pose_guided_img_feat.shape, ' pose_guided_img_feat') torch.Size([64, 2048, 8, 8])
         # assert False
         joint_img, joint_score = self.position_net(pose_guided_img_feat)  # refined 2D pose or 3D pose
