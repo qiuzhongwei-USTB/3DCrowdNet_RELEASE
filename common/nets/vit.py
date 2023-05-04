@@ -407,7 +407,6 @@ class ViT(BaseBackbone):
 
         B = x.shape[0]
         x = self.last_norm(x)
-
         # xp = x.permute(0, 2, 1).reshape(B, -1, Hp, Wp).contiguous()
         xp = x.permute(0, 2, 1).reshape(B, -1, 16, 16).contiguous()
 
