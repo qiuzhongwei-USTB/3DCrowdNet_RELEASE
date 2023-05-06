@@ -75,6 +75,17 @@ class Trainer(Base):
         self.logger.info('Load checkpoint from {}'.format(ckpt_path))
         return start_epoch, model, optimizer
 
+    def load_pretrained(self, model, pre_train_file):
+        assert os.path.isfile(pre_train_file)
+
+        ckpt = torch.load(pre_train_file) 
+        model.load_state_dict(ckpt['network'], strict=False)
+
+        self.logger.info('Load pretrained file from {}'.format(pre_train_file))
+
+        return model
+
+
     def set_lr(self, epoch):
         for e in cfg.lr_dec_epoch:
             if epoch < e:
@@ -121,6 +132,7 @@ class Trainer(Base):
             
         self.itr_per_epoch = math.ceil(len(trainset_loader) / cfg.num_gpus / cfg.train_batch_size)
         self.batch_generator = DataLoader(dataset=trainset_loader, batch_size=cfg.num_gpus*cfg.train_batch_size, shuffle=True, num_workers=cfg.num_thread, pin_memory=True)
+    
 
     def _make_model(self):
         # prepare network
@@ -128,10 +140,16 @@ class Trainer(Base):
         model = get_model(self.vertex_num, self.joint_num, 'train')
         model = DataParallel(model).cuda()
         optimizer = self.get_optimizer(model)
+
+        if cfg.pre_train_file:
+            model = self.load_pretrained(model, cfg.pre_train_file)
+            
         if cfg.continue_train:
             start_epoch, model, optimizer = self.load_model(model, optimizer)
         else:
             start_epoch = 0
+
+        
         model.train()
 
         self.start_epoch = start_epoch
