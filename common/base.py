@@ -58,6 +58,12 @@ class Trainer(Base):
             {'params': model.module.pose2feat.parameters()},
             {'params': model.module.position_net.parameters()},
             {'params': model.module.rotation_net.parameters()},],lr=cfg.lr)
+        elif cfg.optimizer == 'sgd':
+            optimizer = torch.optim.SGD([
+            {'params': model.module.backbone.parameters(), 'lr': cfg.lr_backbone},
+            {'params': model.module.pose2feat.parameters()},
+            {'params': model.module.position_net.parameters()},
+            {'params': model.module.rotation_net.parameters()},],lr=cfg.lr)
         else:
             assert False
         print('The parameters of backbone, pose2feat, position_net, rotation_net, are added to the optimizer.')
