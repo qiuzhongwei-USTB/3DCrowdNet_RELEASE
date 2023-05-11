@@ -46,13 +46,20 @@ class Trainer(Base):
         super(Trainer, self).__init__(log_name = 'train_logs.txt')
 
     def get_optimizer(self, model):
-        optimizer = torch.optim.Adam([
+        if cfg.optimizer == 'adamW':
+            optimizer = torch.optim.AdamW([
             {'params': model.module.backbone.parameters(), 'lr': cfg.lr_backbone},
             {'params': model.module.pose2feat.parameters()},
             {'params': model.module.position_net.parameters()},
-            {'params': model.module.rotation_net.parameters()},
-        ],
-        lr=cfg.lr)
+            {'params': model.module.rotation_net.parameters()},],lr=cfg.lr, betas=(0.9, 0.999), weight_decay=0.1)
+        elif cfg.optimizer == 'adam':
+            optimizer = torch.optim.Adam([
+            {'params': model.module.backbone.parameters(), 'lr': cfg.lr_backbone},
+            {'params': model.module.pose2feat.parameters()},
+            {'params': model.module.position_net.parameters()},
+            {'params': model.module.rotation_net.parameters()},],lr=cfg.lr)
+        else:
+            assert False
         print('The parameters of backbone, pose2feat, position_net, rotation_net, are added to the optimizer.')
 
         return optimizer

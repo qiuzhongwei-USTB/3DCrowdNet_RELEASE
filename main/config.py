@@ -20,6 +20,7 @@ class Config:
     backbone_type = 'vit' #[resnet, vit]
 
     pre_train_file=None  #path
+    optimizer='adam' #[adam, adamW]
     
     ## input, output
     input_img_shape = (256, 256)  #(256, 192)
